@@ -27,12 +27,9 @@ class GCN(nn.Module):
             nn.ReLU(),
             GCN_layer(16, 16, A),
             nn.ReLU(),
-            GCN_layer(16, 16, A),
-            nn.ReLU(),
             GCN_layer(16, 32, A),
             nn.ReLU(),
             GCN_layer(32, 32, A),
-            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(32*18, num_class),
         )

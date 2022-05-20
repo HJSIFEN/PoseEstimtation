@@ -39,7 +39,7 @@ def train(model, train_dataset, valid_datset, epochs = 50,batch_size= 10, learni
     print(f"epochs : {epochs}")
 
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
     for t in range(epochs):
         print(f"Epoch {t+1}\n---------------------------------")

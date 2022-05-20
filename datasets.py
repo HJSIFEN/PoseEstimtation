@@ -12,6 +12,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import json
+from sklearn.utils import resample
 
 _target = np.array(['front', 'back', 'left', 'right'])
 
@@ -170,27 +171,45 @@ class AlphaposeSkeletonData(Dataset):
                 json_data = json.load(f)
             dic = {}
             for data in json_data:
-                
+                cls = data['cls']
+                if cls != 0:
+                    continue
                 image_id = data['image_id']
                 box = data['box']
                 keypoints = np.array(data['keypoints']).reshape(-1, 3)
                 x1, y1, x2, y2 = box
-                _, img_height, img_width= read_image(os.path.join(image_dir, image_id[:-4]+'.jpg')).shape
                 temp = (x2 - x1) * (y2 - y1)
+                if  temp < 0:
+                    temp *= -1
                 
-                keypoints = keypoints / np.array([img_width, img_height, 1])
                 keypoints = np.append(keypoints,(keypoints[5:6] + keypoints[6:7])/2, axis = 0)
                 if image_id in dic.keys():
                     if temp > dic[image_id]['box']:
                         dic[image_id]['box'] = temp
-                        dic[image_id]['keypoints'] = keypoints                        
+                        dic[image_id]['keypoints'] = keypoints
+                                     
                 else :                     
                     dic[image_id] = {"keypoints" : keypoints, "box" : temp, 'label' : (_target == pose_name[:-5]).astype('int')}
             
             for id, values in dic.items():
                 skeletons += [values['keypoints']]
                 labels += [values['label']]
+        skeletons = np.array(skeletons)
+        labels = np.array(labels)
+        
+        min_len = min((labels[:,0]==1).sum(),
+        (labels[:,1]==1).sum(),
+        (labels[:,2]==1).sum(),
+        (labels[:,3]==1).sum())
 
+        _skeletons =[]
+        _labels = []
+        for ii in range(0, 4):
+            sk_idx = [np.random.choice(range(len(skeletons[labels[:, ii]==1])), size = min_len, replace = False)]
+            _skeletons+=[skeletons[labels[:, ii]==1][sk_idx[0]]]
+            _labels+=[labels[labels[:, ii]==1][sk_idx[0]]]
+        skeletons = np.array(_skeletons).reshape(-1,18, 3)
+        labels = np.array(_labels).reshape(-1, 4)
         self.skeletons = torch.tensor(skeletons).float()
         self.labels = torch.tensor(labels).float()
         
