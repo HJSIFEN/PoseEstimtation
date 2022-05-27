@@ -190,7 +190,6 @@ class AlphaposeSkeletonData(Dataset):
                                      
                 else :                     
                     dic[image_id] = {"keypoints" : keypoints, "box" : temp, 'label' : (_target == pose_name[:-5]).astype('int')}
-            
             for id, values in dic.items():
                 skeletons += [values['keypoints']]
                 labels += [values['label']]
@@ -224,13 +223,39 @@ class AlphaposeSkeletonData(Dataset):
 
         return skeleton, label
 
+class TestAlphaPose(Dataset):
+    def __init__(self, json_file):
+        with open(json_file, 'r') as f:
+            json_data = json.load(f)
+        dic = {}
+        for data in json_data:
+            cls = data['cls']
+            if cls != 0:
+                continue
+            image_id = data['image_id']
+            box = data['box']
+            keypoints = np.array(data['keypoints']).reshape(-1, 3)
+            x1, y1, x2, y2 = box
+            temp = (x2 - x1) * (y2 - y1)
+            if  temp < 0:
+                temp *= -1
+            
+            keypoints = np.append(keypoints,(keypoints[5:6] + keypoints[6:7])/2, axis = 0)
+            if image_id in dic.keys():
+                if temp > dic[image_id]['box']:
+                    dic[image_id]['box'] = temp
+                    dic[image_id]['keypoints'] = keypoints
+                                    
+            else :                     
+                dic[image_id] = {"keypoints" : keypoints, "box" : temp}
+        self.dic = dic
 
-# dir = "C:\\Users\\user\\Desktop\\pose-angle"
-# dataset = TrainRawData(dir)
 
-# def SkeletonMaker(dataset, batch_size = 32, shuffle = False):   
-#     dataloader = DataLoader(dataset, batch_size = batch_size, shuffle= shuffle)
-#     predictor = openpifpaf.Predictor(checkpoint='shufflenetv2k16')
-    
-#     for batch, (imgs, labels) in dataloader:
+    def __len__(self):
+        return len(self.dic.keys())
 
+    def __getitem__(self, index):
+        image_id = list(self.dic.keys())[index]
+        skeleton = self.dic[image_id]['keypoints']
+
+        return skeleton, image_id

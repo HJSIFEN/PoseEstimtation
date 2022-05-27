@@ -27,8 +27,12 @@ _A =\
     ]
     
 
-def train(model, train_dataset, valid_datset, epochs = 50,batch_size= 10, learning_rate = 1e-3, ):
-    
+def train(model, train_dataset, valid_datset, model_name="GCN", epochs = 50,batch_size= 10, learning_rate = 1e-3, early_stop_cnt=5):
+    import os
+
+    if not os.path.isdir(f"exp/{model_name}"):
+        os.mkdir(f"exp/{model_name}")
+
     train_loader = DataLoader(train_dataset, batch_size = 10, shuffle= True)
     valid_loader = DataLoader(valid_datset, batch_size = 10, shuffle=True)
     
@@ -40,7 +44,8 @@ def train(model, train_dataset, valid_datset, epochs = 50,batch_size= 10, learni
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
-
+    best_val_loss = 999999
+    early_stop = 0
     for t in range(epochs):
         print(f"Epoch {t+1}\n---------------------------------")
         #def train_loop()
@@ -66,9 +71,22 @@ def train(model, train_dataset, valid_datset, epochs = 50,batch_size= 10, learni
                 pred = model(X)
                 val_loss += loss_fn(pred, y)
             print(f'val_loss: {val_loss:>7f}')
+            if best_val_loss > val_loss:
+                early_stop = 0
+                best_val_loss = val_loss
+                print(f"Save best model : {best_val_loss} > {val_loss}")
+                torch.save(model.state_dict(), f"exp/{model_name}/BestModel.pth")
+            else :
+                early_stop += 1
+
+        
+        if early_stop > early_stop_cnt :
+            print('early stop')
+            break
+
         print("---------------------------------")
     print("Done!")
-    torch.save(model.state_dict(), "./gcn.pth")
+    torch.save(model.state_dict(), "./fianl_gcn.pth")
 
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
@@ -101,4 +119,3 @@ def test_loop(dataloader, model, loss_fn):
     correct /= size
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
-    
