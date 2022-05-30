@@ -16,6 +16,4 @@ def image_classification(model, json_file, image_dir,  save_dir):
     for data, image_id in datasets:
         data = torch.tensor(data).float()
         pred = model(data.unsqueeze(0)) 
-        print(target[pred.argmax()])   
-        print(image_id)    
         shutil.copyfile(os.path.join(image_dir, image_id), os.path.join(save_dir, target[pred.argmax()],image_id))
