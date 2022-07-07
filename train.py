@@ -86,7 +86,7 @@ def train(model, train_dataset, valid_datset, model_name="GCN", epochs = 50,batc
 
         print("---------------------------------")
     print("Done!")
-    torch.save(model.state_dict(), "./fianl_gcn.pth")
+    torch.save(model.state_dict(), "exp/{model_name}/fianl_gcn.pth")
 
 def train_loop(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
